@@ -2,20 +2,88 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Cellnex MindAR</title>
+  <title>Cellnex AR Roma EUR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    body { margin: 0; overflow: hidden; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    #start-screen {
+      position: fixed;
+      inset: 0;
+      background: #0D1B1E;
+      color: white;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 30px;
+    }
+
+    #start-screen h1 {
+      color: #00AEAE;
+      margin-bottom: 10px;
+    }
+
+    #start-screen p {
+      font-size: 14px;
+      line-height: 1.5;
+      max-width: 320px;
+      margin-bottom: 25px;
+    }
+
+    button {
+      background: #00AEAE;
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    #status {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      z-index: 999;
+      background: rgba(0,0,0,0.65);
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      text-align: center;
+      display: none;
+    }
   </style>
 </head>
 
 <body>
+
+<div id="start-screen">
+  <h1>Cellnex AR</h1>
+  <p>
+    Attiva posizione e fotocamera.<br>
+    Il GPS verifica che sei vicino al palazzo, poi il sistema riconosce la facciata.
+  </p>
+  <button onclick="startExperience()">Avvia esperienza AR</button>
+</div>
+
+<div id="status">Verifica posizione in corso...</div>
+
 <a-scene
-  mindar-image="imageTargetSrc: facciata-baxter.mind;"
+  id="ar-scene"
+  mindar-image="imageTargetSrc: targets.mind; autoStart: false;"
   color-space="sRGB"
   renderer="colorManagement: true, physicallyCorrectLights"
   vr-mode-ui="enabled: false"
@@ -28,7 +96,7 @@
   <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
   <a-entity mindar-image-target="targetIndex: 0">
-    <a-image 
+    <a-image
       src="#logoCellnex"
       position="0 0.75 0"
       scale="0.9 0.35 1">
@@ -36,5 +104,75 @@
   </a-entity>
 
 </a-scene>
+
+<script>
+  const targetLat = 41.8360486;
+  const targetLng = 12.4745147;
+  const maxDistanceMeters = 300;
+
+  function distanceMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) *
+      Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function startExperience() {
+    const status = document.getElementById("status");
+    status.style.display = "block";
+    status.innerText = "Verifica posizione in corso...";
+
+    if (!navigator.geolocation) {
+      status.innerText = "GPS non disponibile. Avvio riconoscimento visivo.";
+      startMindAR();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+
+        const distance = distanceMeters(userLat, userLng, targetLat, targetLng);
+
+        if (distance <= maxDistanceMeters) {
+          status.innerText = "Sei vicino al palazzo. Inquadra la facciata.";
+        } else {
+          status.innerText = "Sei a circa " + Math.round(distance) + " m dal palazzo. Avvio comunque il riconoscimento.";
+        }
+
+        startMindAR();
+      },
+      function() {
+        status.innerText = "Posizione non consentita. Avvio riconoscimento visivo.";
+        startMindAR();
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  function startMindAR() {
+    document.getElementById("start-screen").style.display = "none";
+
+    const sceneEl = document.querySelector("a-scene");
+
+    sceneEl.addEventListener("renderstart", () => {
+      const arSystem = sceneEl.systems["mindar-image-system"];
+      arSystem.start();
+    });
+  }
+</script>
+
 </body>
 </html>
