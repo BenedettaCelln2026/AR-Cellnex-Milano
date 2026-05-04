@@ -2,18 +2,14 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Cellnex AR Roma EUR</title>
+  <title>Cellnex AR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-    }
+    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background:#0D1B1E; }
 
     #start-screen {
       position: fixed;
@@ -31,23 +27,24 @@
 
     #start-screen h1 {
       color: #00AEAE;
-      margin-bottom: 10px;
+      font-size: 36px;
+      margin-bottom: 18px;
     }
 
     #start-screen p {
-      font-size: 14px;
+      font-size: 16px;
       line-height: 1.5;
-      max-width: 320px;
-      margin-bottom: 25px;
+      max-width: 330px;
+      margin-bottom: 30px;
     }
 
     button {
       background: #00AEAE;
       color: white;
       border: none;
-      padding: 14px 24px;
-      border-radius: 8px;
-      font-size: 15px;
+      padding: 16px 28px;
+      border-radius: 10px;
+      font-size: 17px;
       font-weight: bold;
     }
 
@@ -61,9 +58,13 @@
       color: white;
       padding: 10px;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 14px;
       text-align: center;
       display: none;
+    }
+
+    a-scene {
+      visibility: hidden;
     }
   </style>
 </head>
@@ -74,15 +75,15 @@
   <h1>Cellnex AR</h1>
   <p>
     Attiva posizione e fotocamera.<br>
-    Il GPS verifica che sei vicino al palazzo, poi il sistema riconosce la facciata.
+    Inquadra la facciata del palazzo per visualizzare il logo.
   </p>
   <button onclick="startExperience()">Avvia esperienza AR</button>
 </div>
 
-<div id="status">Verifica posizione in corso...</div>
+<div id="status">Avvio fotocamera...</div>
 
 <a-scene
-  id="ar-scene"
+  id="scene"
   mindar-image="imageTargetSrc: targets.mind; autoStart: false;"
   color-space="sRGB"
   renderer="colorManagement: true, physicallyCorrectLights"
@@ -99,77 +100,43 @@
     <a-image
       src="#logoCellnex"
       position="0 0.75 0"
-      scale="0.9 0.35 1">
+      scale="0.8 0.3 1">
     </a-image>
   </a-entity>
 
 </a-scene>
 
 <script>
-  const targetLat = 41.8360486;
-  const targetLng = 12.4745147;
-  const maxDistanceMeters = 300;
-
-  function distanceMeters(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) *
-      Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
   function startExperience() {
-    const status = document.getElementById("status");
-    status.style.display = "block";
-    status.innerText = "Verifica posizione in corso...";
+    document.getElementById("start-screen").style.display = "none";
+    document.getElementById("status").style.display = "block";
+    document.getElementById("status").innerText = "Avvio fotocamera...";
 
-    if (!navigator.geolocation) {
-      status.innerText = "GPS non disponibile. Avvio riconoscimento visivo.";
-      startMindAR();
-      return;
+    const sceneEl = document.querySelector("#scene");
+    sceneEl.style.visibility = "visible";
+
+    if (sceneEl.hasLoaded) {
+      startAR(sceneEl);
+    } else {
+      sceneEl.addEventListener("loaded", function () {
+        startAR(sceneEl);
+      });
     }
-
-    navigator.geolocation.getCurrentPosition(
-      function(position) {
-        const userLat = position.coords.latitude;
-        const userLng = position.coords.longitude;
-
-        const distance = distanceMeters(userLat, userLng, targetLat, targetLng);
-
-        if (distance <= maxDistanceMeters) {
-          status.innerText = "Sei vicino al palazzo. Inquadra la facciata.";
-        } else {
-          status.innerText = "Sei a circa " + Math.round(distance) + " m dal palazzo. Avvio comunque il riconoscimento.";
-        }
-
-        startMindAR();
-      },
-      function() {
-        status.innerText = "Posizione non consentita. Avvio riconoscimento visivo.";
-        startMindAR();
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
-    );
   }
 
-  function startMindAR() {
-    document.getElementById("start-screen").style.display = "none";
+  function startAR(sceneEl) {
+    const arSystem = sceneEl.systems["mindar-image-system"];
 
-    const sceneEl = document.querySelector("a-scene");
+    arSystem.start();
 
-    sceneEl.addEventListener("renderstart", () => {
-      const arSystem = sceneEl.systems["mindar-image-system"];
-      arSystem.start();
+    document.getElementById("status").innerText = "Inquadra la facciata del palazzo.";
+
+    sceneEl.addEventListener("targetFound", function () {
+      document.getElementById("status").innerText = "Facciata riconosciuta.";
+    });
+
+    sceneEl.addEventListener("targetLost", function () {
+      document.getElementById("status").innerText = "Inquadra meglio la facciata.";
     });
   }
 </script>
