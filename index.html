@@ -9,82 +9,14 @@
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background:#0D1B1E; }
-
-    #start-screen {
-      position: fixed;
-      inset: 0;
-      background: #0D1B1E;
-      color: white;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 30px;
-    }
-
-    #start-screen h1 {
-      color: #00AEAE;
-      font-size: 36px;
-      margin-bottom: 18px;
-    }
-
-    #start-screen p {
-      font-size: 16px;
-      line-height: 1.5;
-      max-width: 330px;
-      margin-bottom: 30px;
-    }
-
-    button {
-      background: #00AEAE;
-      color: white;
-      border: none;
-      padding: 16px 28px;
-      border-radius: 10px;
-      font-size: 17px;
-      font-weight: bold;
-    }
-
-    #status {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      z-index: 999;
-      background: rgba(0,0,0,0.65);
-      color: white;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 14px;
-      text-align: center;
-      display: none;
-    }
-
-    a-scene {
-      visibility: hidden;
-    }
+    body { margin: 0; overflow: hidden; }
   </style>
 </head>
 
 <body>
 
-<div id="start-screen">
-  <h1>Cellnex AR</h1>
-  <p>
-    Attiva posizione e fotocamera.<br>
-    Inquadra la facciata del palazzo per visualizzare il logo.
-  </p>
-  <button onclick="startExperience()">Avvia esperienza AR</button>
-</div>
-
-<div id="status">Avvio fotocamera...</div>
-
 <a-scene
-  id="scene"
-  mindar-image="imageTargetSrc: targets.mind; autoStart: false;"
+  mindar-image="imageTargetSrc: targets.mind;"
   color-space="sRGB"
   renderer="colorManagement: true, physicallyCorrectLights"
   vr-mode-ui="enabled: false"
@@ -105,41 +37,6 @@
   </a-entity>
 
 </a-scene>
-
-<script>
-  function startExperience() {
-    document.getElementById("start-screen").style.display = "none";
-    document.getElementById("status").style.display = "block";
-    document.getElementById("status").innerText = "Avvio fotocamera...";
-
-    const sceneEl = document.querySelector("#scene");
-    sceneEl.style.visibility = "visible";
-
-    if (sceneEl.hasLoaded) {
-      startAR(sceneEl);
-    } else {
-      sceneEl.addEventListener("loaded", function () {
-        startAR(sceneEl);
-      });
-    }
-  }
-
-  function startAR(sceneEl) {
-    const arSystem = sceneEl.systems["mindar-image-system"];
-
-    arSystem.start();
-
-    document.getElementById("status").innerText = "Inquadra la facciata del palazzo.";
-
-    sceneEl.addEventListener("targetFound", function () {
-      document.getElementById("status").innerText = "Facciata riconosciuta.";
-    });
-
-    sceneEl.addEventListener("targetLost", function () {
-      document.getElementById("status").innerText = "Inquadra meglio la facciata.";
-    });
-  }
-</script>
 
 </body>
 </html>
