@@ -13,27 +13,56 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
-      background: #07181A;
+    html, body {
+      width: 100%; height: 100%;
+      background: #000;
       font-family: 'Helvetica Neue', Arial, sans-serif;
       overflow: hidden;
-      width: 100%; height: 100dvh;
     }
 
-    /* ── SPLASH ── */
+    /* ── A-Frame sempre nel DOM, sempre visibile ── */
+    a-scene {
+      position: fixed !important;
+      top: 0 !important; left: 0 !important;
+      width: 100% !important; height: 100% !important;
+      z-index: 1;
+      display: block !important;
+    }
+
+    /* ── SPLASH sovrapposto alla scena ── */
     #splash {
-      position: fixed; inset: 0; z-index: 9999;
+      position: fixed; inset: 0;
+      z-index: 9999;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      background: #07181A; padding: 2rem;
-      transition: opacity .4s ease;
+      padding: 2.5rem 2rem;
+      /* sfondo solido che copre la scena finché non si preme il bottone */
+      background: #07181A;
+      transition: opacity 0.5s ease;
     }
-    #splash.hidden { opacity: 0; pointer-events: none; }
+    #splash.hiding {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #splash.gone {
+      display: none;
+    }
 
-    #splash svg.logo { width: 180px; margin-bottom: 2.5rem; filter: drop-shadow(0 0 18px rgba(0,178,178,.5)); }
-    #splash h1 { font-size: 2rem; font-weight: 700; color: #fff; margin-bottom: .5rem; }
+    #splash svg.logo {
+      width: 180px;
+      margin-bottom: 2.5rem;
+      filter: drop-shadow(0 0 18px rgba(0,178,178,.55));
+    }
+    #splash h1 {
+      font-size: 2rem; font-weight: 700;
+      color: #fff; margin-bottom: .5rem;
+    }
     #splash h1 span { color: #00B2B2; }
-    #splash p { font-size: .88rem; color: rgba(255,255,255,.5); text-align: center; max-width: 280px; margin-bottom: 2.5rem; line-height: 1.8; }
+    #splash p {
+      font-size: .88rem; color: rgba(255,255,255,.5);
+      text-align: center; max-width: 280px;
+      margin-bottom: 2.5rem; line-height: 1.8;
+    }
 
     #start-btn {
       background: #00B2B2; color: #07181A;
@@ -41,20 +70,19 @@
       padding: 1rem 2.5rem;
       font-size: .9rem; font-weight: 700;
       letter-spacing: .1em; text-transform: uppercase;
-      cursor: pointer; transition: background .2s;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
     }
-    #start-btn:hover { background: #00D4D4; }
 
-    /* ── HUD sopra la scena AR ── */
+    /* ── HUD ── */
     #hud {
-      position: fixed; inset: 0; z-index: 100;
-      pointer-events: none; display: none;
+      position: fixed; inset: 0;
+      z-index: 100; pointer-events: none;
+      display: none;
     }
-
     #hud-top {
       position: absolute; top: 0; left: 0; right: 0;
       display: flex; justify-content: space-between; align-items: center;
-      padding: max(env(safe-area-inset-top), 1.2rem) 1.4rem 1rem;
+      padding: max(env(safe-area-inset-top, 16px), 16px) 1.4rem 1rem;
       background: linear-gradient(to bottom, rgba(7,24,26,.85), transparent);
     }
     #hud-top svg { width: 88px; }
@@ -76,7 +104,7 @@
     #toast {
       position: absolute; bottom: 5rem; left: 50%;
       transform: translateX(-50%);
-      background: rgba(7,24,26,.75);
+      background: rgba(7,24,26,.8);
       border: 1px solid rgba(0,178,178,.4);
       backdrop-filter: blur(10px);
       padding: .55rem 1.3rem; border-radius: 20px;
@@ -84,26 +112,50 @@
       text-transform: uppercase; white-space: nowrap;
       transition: color .3s, border-color .3s;
     }
-    #toast.found { color: #6DC82A; border-color: rgba(109,200,42,.55); }
+    #toast.found {
+      color: #6DC82A;
+      border-color: rgba(109,200,42,.55);
+    }
 
     #hint {
       position: absolute; bottom: 2.5rem; left: 0; right: 0;
       text-align: center; font-size: .62rem; letter-spacing: .15em;
       color: rgba(255,255,255,.35); text-transform: uppercase;
     }
-
-    /* ── A-Frame occupa tutto lo schermo ── */
-    a-scene {
-      position: fixed !important;
-      top: 0 !important; left: 0 !important;
-      width: 100% !important; height: 100% !important;
-      z-index: 1;
-    }
   </style>
 </head>
 <body>
 
-<!-- ══ SPLASH ══ -->
+<!-- ══ A-FRAME SCENE — sempre nel DOM, MindAR parte da qui ══ -->
+<a-scene
+  id="ar-scene"
+  mindar-image="imageTargetSrc: targets.mind; autoStart: false; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.001; filterBeta: 1000; warmupTolerance: 1; missTolerance: 5"
+  embedded
+  renderer="colorManagement: true"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+>
+  <a-assets timeout="15000">
+    <img id="cellnex-img" src="cellnex-telecom-logotransparent.png" crossorigin="anonymous" />
+  </a-assets>
+
+  <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
+
+  <a-entity mindar-image-target="targetIndex: 0">
+    <!-- Logo invisibile di default, appare solo su targetFound -->
+    <a-image
+      id="ar-logo"
+      src="#cellnex-img"
+      position="0 0.6 0"
+      width="1.4"
+      height="0.35"
+      visible="false"
+      material="transparent: true; alphaTest: 0.05; side: double; depthWrite: false"
+    ></a-image>
+  </a-entity>
+</a-scene>
+
+<!-- ══ SPLASH — sovrapposto, nasconde la scena ══ -->
 <div id="splash">
   <svg class="logo" viewBox="0 0 240 72" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="28" cy="36" r="24" stroke="#00B2B2" stroke-width="2.5" fill="none" opacity=".2"/>
@@ -139,119 +191,74 @@
   <div id="hint">Punta la fotocamera verso il palazzo</div>
 </div>
 
-<!-- ══ A-FRAME SCENE ══
-     La scena è sempre presente nel DOM ma nascosta.
-     MindAR viene avviato via JS dopo il click.
-     Il logo parte con visible="false" e diventa true solo su targetFound.
--->
-<a-scene
-  id="ar-scene"
-  mindar-image="imageTargetSrc: targets.mind; autoStart: false; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.001; filterBeta: 1000; warmupTolerance: 1; missTolerance: 5"
-  embedded
-  renderer="colorManagement: true; physicallyCorrectLights: false"
-  vr-mode-ui="enabled: false"
-  device-orientation-permission-ui="enabled: false"
-  style="display: none;"
->
-  <a-assets timeout="10000">
-    <img id="cellnex-img" src="cellnex-telecom-logotransparent.png" crossorigin="anonymous" />
-  </a-assets>
-
-  <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
-
-  <!-- Target 0: prima (e unica) immagine in targets.mind -->
-  <a-entity mindar-image-target="targetIndex: 0">
-
-    <!--
-      Il logo parte INVISIBILE.
-      Quando il target viene trovato, JS lo rende visibile.
-      position="0 0.6 0" → centrato orizzontalmente, alzato di 0.6 unità sopra il target.
-      Modifica height in base alle proporzioni reali del tuo PNG.
-      (Cellnex logo ≈ 4:1 → width=1.4, height=0.35)
-    -->
-    <a-image
-      id="ar-logo"
-      src="#cellnex-img"
-      position="0 0.6 0"
-      width="1.4"
-      height="0.35"
-      visible="false"
-      material="transparent: true; alphaTest: 0.05; side: double; depthWrite: false"
-    ></a-image>
-
-  </a-entity>
-</a-scene>
-
 <script>
 (function () {
-  const splash   = document.getElementById('splash');
-  const arScene  = document.getElementById('ar-scene');
-  const hud      = document.getElementById('hud');
-  const toast    = document.getElementById('toast');
-  const startBtn = document.getElementById('start-btn');
+  var splash   = document.getElementById('splash');
+  var hud      = document.getElementById('hud');
+  var toast    = document.getElementById('toast');
+  var startBtn = document.getElementById('start-btn');
+  var arScene  = document.getElementById('ar-scene');
+  var arLogo   = document.getElementById('ar-logo');
+  var started  = false;
 
-  let started = false;
-
-  startBtn.addEventListener('click', async () => {
-    if (started) return;
-
-    /* 1. Richiedi esplicitamente la fotocamera */
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false
-      });
-      /* Rilascia subito: MindAR aprirà il proprio stream */
-      stream.getTracks().forEach(t => t.stop());
-    } catch (err) {
-      alert('Fotocamera non disponibile. Controlla i permessi del browser e riprova.');
-      return;
+  function startMindAR() {
+    var sys = arScene.systems['mindar-image-system'];
+    if (sys) {
+      sys.start();
+    } else {
+      /* Se il sistema non è ancora pronto riprova tra 200ms */
+      setTimeout(startMindAR, 200);
     }
+  }
 
-    started = true;
+  function attachTargetEvents() {
+    var target = arScene.querySelector('[mindar-image-target]');
+    if (!target) return;
 
-    /* 2. Mostra la scena A-Frame */
-    arScene.style.display = 'block';
-
-    /* 3. Nascondi splash */
-    splash.classList.add('hidden');
-
-    /* 4. Avvia MindAR dopo che A-Frame ha inizializzato la scena */
-    arScene.addEventListener('loaded', onSceneLoaded, { once: true });
-
-    /* Se la scena era già loaded prima del click (caso raro) */
-    if (arScene.hasLoaded) onSceneLoaded();
-  });
-
-  function onSceneLoaded() {
-    /* Avvia il sistema MindAR (apre la fotocamera) */
-    const mindARSystem = arScene.systems['mindar-image-system'];
-    mindARSystem.start();
-
-    /* Mostra HUD */
-    hud.style.display = 'block';
-
-    /* Ascolta gli eventi sul target */
-    const targetEntity = arScene.querySelector('[mindar-image-target]');
-    const arLogo       = document.getElementById('ar-logo');
-
-    targetEntity.addEventListener('targetFound', () => {
-      /* Rendi il logo visibile solo ora */
+    target.addEventListener('targetFound', function () {
       arLogo.setAttribute('visible', 'true');
       toast.textContent = '✓ Edificio Cellnex riconosciuto';
       toast.classList.add('found');
     });
 
-    targetEntity.addEventListener('targetLost', () => {
-      /* Nascondi il logo quando il target esce dal campo visivo */
+    target.addEventListener('targetLost', function () {
       arLogo.setAttribute('visible', 'false');
       toast.textContent = '○ Ricerca edificio in corso…';
       toast.classList.remove('found');
     });
   }
 
-  /* Blocca scroll accidentale su mobile */
-  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  startBtn.addEventListener('click', function () {
+    if (started) return;
+    started = true;
+
+    /*
+      iOS Safari fix:
+      NON chiamare getUserMedia qui — lo fa MindAR internamente.
+      Bisogna solo far sparire lo splash e avviare MindAR.
+      Il click dell'utente è il "gesture event" che sblocca la camera su iOS.
+    */
+
+    /* 1. Nascondi splash con fade */
+    splash.classList.add('hiding');
+    setTimeout(function () { splash.classList.add('gone'); }, 500);
+
+    /* 2. Mostra HUD */
+    hud.style.display = 'block';
+
+    /* 3. Avvia MindAR — dentro il click handler per rispettare il gesture requirement di iOS */
+    if (arScene.hasLoaded) {
+      startMindAR();
+      attachTargetEvents();
+    } else {
+      arScene.addEventListener('loaded', function () {
+        startMindAR();
+        attachTargetEvents();
+      }, { once: true });
+    }
+  });
+
+  document.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
 })();
 </script>
 
