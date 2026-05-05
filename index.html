@@ -1,114 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>AR Cellnex</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Cellnex</title>
 
-  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background:#0D1B1E; }
+    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background: #07181A; }
 
-    #start-screen {
+    #start {
       position: fixed;
       inset: 0;
-      background: #0D1B1E;
-      color: white;
       z-index: 9999;
+      background: #07181A;
+      color: white;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       text-align: center;
       padding: 30px;
     }
 
-    #start-screen h1 {
-      color: #00AEAE;
+    #start h1 {
+      color: #00B2B2;
       font-size: 34px;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
     }
 
-    #start-screen p {
+    #start p {
       font-size: 18px;
-      max-width: 320px;
-      line-height: 1.5;
       margin-bottom: 30px;
     }
 
-    #start-screen button {
-      background: #00AEAE;
-      color: white;
+    #start button {
+      background: #00B2B2;
+      color: #07181A;
       border: none;
       padding: 16px 28px;
       border-radius: 10px;
-      font-size: 17px;
+      font-size: 16px;
       font-weight: bold;
     }
 
-    #ar-container { display: none; }
-
-    #info {
+    #status {
       position: fixed;
-      top: 10px;
-      left: 10px;
-      right: 10px;
+      top: 15px;
+      left: 15px;
+      right: 15px;
       z-index: 999;
       background: rgba(0,0,0,0.65);
       color: white;
       padding: 10px;
       border-radius: 8px;
       text-align: center;
-      font-size: 14px;
+      display: none;
     }
   </style>
 </head>
 
 <body>
 
-<div id="start-screen">
+<div id="start">
   <h1>AR Cellnex</h1>
   <p>Inquadra il panorama Cellnex di fronte a te</p>
-  <button onclick="startAR()">Avvia visione AR</button>
+  <button id="startButton">Avvia visione AR</button>
 </div>
 
-<div id="ar-container">
-  <div id="info">Punta la fotocamera verso il palazzo</div>
+<div id="status">Inquadra la facciata del palazzo</div>
 
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+<a-scene
+  id="scene"
+  mindar-image="imageTargetSrc: targets.mind; autoStart: false;"
+  color-space="sRGB"
+  renderer="colorManagement: true; physicallyCorrectLights: true"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+  embedded>
 
-    <!-- BAXTER / VIALE DELL'INDUSTRIA 40 -->
-    <a-image 
-      src="cellnex-telecom-logotransparent.png"
-      gps-entity-place="latitude: 41.8360486; longitude: 12.4745147;"
-      scale="4 1.6 1"
-      position="0 0 0"
-      rotation="0 180 0"
-      look-at="[gps-camera]">
+  <a-assets>
+    <img id="logo" src="cellnex-telecom-logotransparent.png">
+  </a-assets>
+
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+  <a-entity id="target" mindar-image-target="targetIndex: 0">
+    <a-image
+      src="#logo"
+      position="0 0.45 0"
+      scale="0.8 0.3 1">
     </a-image>
+  </a-entity>
 
-    <!-- PIAZZALE DELL'INDUSTRIA 8 -->
-    <a-image 
-      src="cellnex-telecom-logotransparent.png"
-      gps-entity-place="latitude: 41.83705; longitude: 12.47485;"
-      scale="4 1.6 1"
-      position="0 0 0"
-      rotation="0 180 0"
-      look-at="[gps-camera]">
-    </a-image>
-
-    <a-camera gps-camera rotation-reader></a-camera>
-
-  </a-scene>
-</div>
+</a-scene>
 
 <script>
-  function startAR() {
-    document.getElementById("start-screen").style.display = "none";
-    document.getElementById("ar-container").style.display = "block";
-  }
+  const startButton = document.getElementById("startButton");
+  const startScreen = document.getElementById("start");
+  const statusBox = document.getElementById("status");
+  const sceneEl = document.getElementById("scene");
+  const target = document.getElementById("target");
+
+  startButton.addEventListener("click", async () => {
+    startScreen.style.display = "none";
+    statusBox.style.display = "block";
+    statusBox.innerText = "Avvio fotocamera...";
+
+    const arSystem = sceneEl.systems["mindar-image-system"];
+
+    if (arSystem) {
+      await arSystem.start();
+      statusBox.innerText = "Inquadra la facciata del palazzo";
+    } else {
+      sceneEl.addEventListener("loaded", async () => {
+        await sceneEl.systems["mindar-image-system"].start();
+        statusBox.innerText = "Inquadra la facciata del palazzo";
+      });
+    }
+  });
+
+  target.addEventListener("targetFound", () => {
+    statusBox.innerText = "Facciata riconosciuta";
+  });
+
+  target.addEventListener("targetLost", () => {
+    statusBox.innerText = "Inquadra meglio la facciata";
+  });
 </script>
 
 </body>
