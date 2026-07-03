@@ -309,8 +309,8 @@ body {
 
 <script>
 // ══ CONFIG ══
-const ROOFTOP_LAT = 45.48497, ROOFTOP_LNG = 9.19479;
-const ACTIVATION_RADIUS_M = 150;
+const ROOFTOP_LAT = 45.4848, ROOFTOP_LNG = 9.1942;
+const ACTIVATION_RADIUS_M = 800;
 const TARGET_BEARING = 150;   // direzione palazzo HDI (~Sud-Est)
 const BEARING_TOL    = 35;    // tolleranza ±35°
 
@@ -400,8 +400,8 @@ function onGPS(pos){
 
 // ══ MOSTRA LOGO AR ══
 function showARLogo(){
-  arLogo.style.left = '38%';
-  arLogo.style.top  = '30%';
+  arLogo.style.left = '42%';
+  arLogo.style.top  = '28%';
   arLogo.classList.add('show');
   setLayer(currentLayer);
   bottomUI.classList.add('show');
